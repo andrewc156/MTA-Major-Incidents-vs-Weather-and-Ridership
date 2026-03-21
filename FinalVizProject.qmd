@@ -1,0 +1,404 @@
+---
+title: "DATA 3230 Data Visualization Final Project"
+format:
+  pdf:
+    geometry: margin=1in
+    fontsize: 11pt
+editor: visual
+---
+
+## Introduction
+
+This project analyzes monthly MTA major incidents in New York City and examines whether weather conditions help explain variation in incident counts. Major incidents are defined as incidents that delay 50 or more trains. The analysis begins with weather-only models and then improves the model by incorporating subway ridership as a measure of system usage.
+
+## Load Packages
+
+```{r}
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(lubridate)
+library(tidyr)
+library(httr)
+library(car)
+```
+
+## Load and Summarize Incident Data
+
+```{r}
+incidents_2015_2019 <- read_csv("~/Downloads/MTAIncidents 2015-2019.csv", show_col_types = FALSE)
+incidents_2020_2024 <- read_csv("~/Downloads/MTAIncidents 2020-2024.csv", show_col_types = FALSE)
+
+all_incidents <- bind_rows(incidents_2015_2019, incidents_2020_2024) %>%
+  arrange(month)
+
+summary_df <- all_incidents %>%
+  group_by(month, category) %>%
+  summarise(count = n(), .groups = "drop")
+
+monthly_totals <- all_incidents %>%
+  group_by(month) %>%
+  summarise(total = n(), .groups = "drop") %>%
+  arrange(month)
+
+category_totals <- all_incidents %>%
+  group_by(category) %>%
+  summarise(total = n(), .groups = "drop") %>%
+  arrange(desc(total))
+```
+
+## Download and Prepare Weather Data
+
+```{r}
+base_url <- "https://www.ncei.noaa.gov/access/services/data/v1"
+
+res <- GET(
+  url = base_url,
+  query = list(
+    dataset = "daily-summaries",
+    stations = "USW00094728",
+    startDate = "2015-01-01",
+    endDate = "2024-12-31",
+    dataTypes = "TMAX,TMIN,PRCP,SNOW,SNWD",
+    format = "json",
+    units = "standard",
+    includeAttributes = "false"
+  ),
+  timeout(60)
+)
+
+stop_for_status(res)
+
+weather_daily <- content(res, as = "parsed", type = "application/json") %>%
+  bind_rows() %>%
+  mutate(
+    DATE = as.Date(DATE),
+    TMAX = as.numeric(TMAX),
+    TMIN = as.numeric(TMIN),
+    PRCP = as.numeric(PRCP),
+    SNOW = as.numeric(SNOW),
+    SNWD = as.numeric(SNWD),
+    month = floor_date(DATE, "month"),
+    heavy_precip_day = PRCP >= 0.5,
+    hot_day = TMAX >= 90
+  )
+
+weather_monthly <- weather_daily %>%
+  group_by(month) %>%
+  summarise(
+    avg_tmax = mean(TMAX, na.rm = TRUE),
+    avg_tmin = mean(TMIN, na.rm = TRUE),
+    total_prcp = sum(PRCP, na.rm = TRUE),
+    total_snow = sum(SNOW, na.rm = TRUE),
+    heavy_precip_days = sum(heavy_precip_day, na.rm = TRUE),
+    hot_days = sum(hot_day, na.rm = TRUE),
+    n_days = n(),
+    .groups = "drop"
+  ) %>%
+  arrange(month)
+```
+
+## Combine Incidents and Weather Data
+
+```{r}
+combined <- monthly_totals %>%
+  mutate(month = as.Date(month)) %>%
+  left_join(weather_monthly, by = "month")
+```
+
+## Correlation Analysis
+
+```{r}
+numeric_vars <- combined %>%
+  select(
+    total, avg_tmax, avg_tmin, total_prcp, total_snow,
+    heavy_precip_days, hot_days, n_days
+  )
+
+cor_mat <- cor(numeric_vars, use = "pairwise.complete.obs")
+cor_mat
+```
+
+The correlation matrix shows that snowfall has the strongest relationship with incidents among the weather variables, while most other weather measures have weak associations.
+
+```{r}
+#| fig-width: 8
+#| fig-height: 6
+#| out-width: "100%"
+
+cor_long <- as.data.frame(cor_mat) %>%
+  mutate(var1 = rownames(.)) %>%
+  pivot_longer(
+    cols = -var1,
+    names_to = "var2",
+    values_to = "correlation"
+  )
+
+ggplot(cor_long, aes(x = var1, y = var2, fill = correlation)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(
+    low = "blue",
+    mid = "white",
+    high = "red",
+    midpoint = 0,
+    limits = c(-1, 1)
+  ) +
+  coord_fixed() +
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(
+    x = NULL,
+    y = NULL,
+    fill = "Correlation",
+    title = "Correlation Heatmap: Monthly MTA Incidents vs. NYC Weather"
+  )
+```
+
+The heatmap confirms that snowfall is the weather feature most visibly associated with incident totals.
+
+## Initial Regression Models Using Weather Only
+
+```{r}
+model1 <- lm(total ~ avg_tmax + total_prcp + total_snow, data = combined)
+summary(model1)
+
+model2 <- lm(total ~ hot_days + heavy_precip_days + total_snow, data = combined)
+summary(model2)
+```
+
+These weather-only models show that snowfall is significant, but the overall explanatory power is low.
+
+```{r}
+vars_for_cor <- combined %>%
+  select(avg_tmax, avg_tmin, total_prcp, total_snow, heavy_precip_days, hot_days)
+
+cor(vars_for_cor, use = "pairwise.complete.obs")
+
+vif(model1)
+vif(model2)
+```
+
+The low VIF values indicate that multicollinearity is not a major concern in these models.
+
+## Simple Linear Regression with Snow Only
+
+```{r}
+snow_model <- lm(total ~ total_snow, data = combined)
+summary(snow_model)
+```
+
+The snow-only model shows that snowfall is a significant predictor, but it explains only a small portion of the variation in incidents.
+
+### Q-Q Plot for Snow-Only Model
+
+```{r}
+#| fig-width: 8
+#| fig-height: 6
+#| out-width: "100%"
+
+qqnorm(residuals(snow_model))
+qqline(residuals(snow_model), col = "red", lwd = 2)
+```
+
+The residuals are approximately normal, with some deviation in the tails.
+
+### Residuals vs Fitted for Snow-Only Model
+
+```{r}
+#| fig-width: 8
+#| fig-height: 6
+#| out-width: "100%"
+
+plot(
+  fitted(snow_model),
+  residuals(snow_model),
+  xlab = "Fitted values",
+  ylab = "Residuals",
+  main = "Residuals vs Fitted"
+)
+abline(h = 0, col = "red", lwd = 2)
+```
+
+The residual pattern suggests the snow-only model misses important variation in the data.
+
+### Log-Transformed Model
+
+```{r}
+log_snow_model <- lm(log(total) ~ total_snow, data = combined)
+summary(log_snow_model)
+```
+
+The log transformation slightly changes the fit but still leaves the model with limited explanatory power.
+
+## Add Subway Ridership Data (2020 and Later)
+
+```{r}
+ridership <- read_csv("~/Downloads/MTA RIDERSHIP SINCE 2020.csv", show_col_types = FALSE)
+
+ridership_monthly <- ridership %>%
+  filter(Mode == "Subway") %>%
+  mutate(
+    Date = mdy(Date),
+    month = floor_date(Date, "month")
+  ) %>%
+  group_by(month) %>%
+  summarise(
+    ridership = sum(Count, na.rm = TRUE),
+    .groups = "drop"
+  )
+```
+
+Ridership is aggregated to the monthly level so it matches the monthly incident data.
+
+```{r}
+combined_2020 <- combined %>%
+  mutate(month = as.Date(month)) %>%
+  filter(month >= as.Date("2020-01-01")) %>%
+  left_join(ridership_monthly, by = "month") %>%
+  filter(!is.na(ridership)) %>%
+  mutate(ridership_millions = ridership / 1e6)
+```
+
+Restricting to 2020 onward allows incidents, weather, and ridership to be analyzed on the same time scale.
+
+## Final Model with Snow and Ridership
+
+```{r}
+final_model <- lm(total ~ total_snow + ridership_millions, data = combined_2020)
+summary(final_model)
+```
+
+The final model shows that both snowfall and ridership are significant predictors of monthly major incidents.
+
+The model has an (R\^2) of about 0.54, meaning roughly 54% of the variation in monthly incidents is explained by snowfall and ridership.
+
+An increase of 1 million riders is associated with about 0.29 additional major incidents, holding snowfall constant.
+
+Each additional inch of snow is associated with about 0.70 more incidents, holding ridership constant.
+
+## Incident Rate Model
+
+```{r}
+combined_2020 <- combined_2020 %>%
+  mutate(incident_rate = total / ridership)
+
+rate_model <- lm(incident_rate ~ total_snow, data = combined_2020)
+summary(rate_model)
+```
+
+The incident rate model shows that snowfall remains significant even after adjusting for ridership.
+
+## Time Series of Incidents and Ridership
+
+```{r}
+#| fig-width: 8
+#| fig-height: 6
+#| out-width: "100%"
+
+ggplot(combined_2020, aes(x = month)) +
+  geom_line(aes(y = total, color = "Incidents"), linewidth = 1) +
+  geom_line(aes(y = ridership_millions * 5, color = "Ridership (scaled)"), linewidth = 1) +
+  scale_color_manual(values = c("Incidents" = "black", "Ridership (scaled)" = "blue")) +
+  theme_minimal() +
+  labs(
+    title = "Monthly Major Incidents and Subway Ridership Over Time",
+    x = "Month",
+    y = "Incidents (Ridership scaled for comparison)",
+    color = ""
+  )
+```
+
+Incidents and ridership move together over time, suggesting higher system usage is associated with more disruptions.
+
+## Diagnostics for Final Model
+
+### Residuals vs Fitted
+
+```{r}
+#| fig-width: 8
+#| fig-height: 6
+#| out-width: "100%"
+
+plot(final_model, which = 1)
+```
+
+Residuals are randomly scattered, indicating the linear model is appropriate.
+
+### Normal Q-Q
+
+```{r}
+#| fig-width: 8
+#| fig-height: 6
+#| out-width: "100%"
+
+plot(final_model, which = 2)
+```
+
+Residuals are approximately normal with minor deviations in the tails.
+
+### Scale-Location
+
+```{r}
+#| fig-width: 8
+#| fig-height: 6
+#| out-width: "100%"
+
+plot(final_model, which = 3)
+```
+
+There is slight heteroscedasticity, but it is not severe.
+
+### Residuals vs Leverage
+
+```{r}
+#| fig-width: 8
+#| fig-height: 6
+#| out-width: "100%"
+
+plot(final_model, which = 5)
+```
+
+No highly influential points are present.
+
+### Variance Inflation Factor
+
+```{r}
+vif(final_model)
+```
+
+The VIF values are very low, indicating no meaningful multicollinearity.
+
+## Model Comparison
+
+```{r}
+model_old <- lm(total ~ total_snow, data = combined_2020)
+AIC(model_old, final_model)
+```
+
+The lower AIC for the final model shows that adding ridership substantially improves model performance.
+
+## Additional Visualization
+
+```{r}
+#| fig-width: 8
+#| fig-height: 6
+#| out-width: "100%"
+
+ggplot(combined_2020, aes(x = ridership_millions, y = total)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE) +
+  theme_minimal() +
+  labs(
+    title = "Monthly Major Incidents vs. Subway Ridership",
+    x = "Ridership (Millions)",
+    y = "Monthly Major Incidents"
+  )
+```
+
+The positive slope indicates that months with higher ridership generally have more major incidents.
+
+## Conclusion
+
+The weather-only models showed that snowfall was the most meaningful weather predictor, while temperature and precipitation variables were generally not statistically significant. However, those models had relatively low explanatory power.
+
+After incorporating subway ridership and restricting the analysis to 2020 onward, model performance improved substantially. The final model showed that both snowfall and ridership were statistically significant predictors of monthly major incidents. Ridership served as the strongest predictor, while snowfall retained an independent effect even after controlling for system usage. This suggests that both operational exposure and weather conditions play important roles in explaining major MTA disruptions.
