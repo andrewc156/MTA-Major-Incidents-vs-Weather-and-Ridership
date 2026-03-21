@@ -54,7 +54,7 @@ A *major incident* is defined as a delay affecting **50 or more trains**.
 ## 📈 Results
 
 ### 🔹 Relationship Between Ridership and Incidents
-![Ridership vs Incidents](images/ridership_regression.png)
+![Ridership vs Incidents](ridership_regression.png)
 
 - Strong positive relationship  
 - Higher ridership → more incidents  
@@ -62,7 +62,7 @@ A *major incident* is defined as a delay affecting **50 or more trains**.
 ---
 
 ### 🔹 Correlation Analysis
-![Correlation Heatmap](images/heatmap.png)
+![Correlation Heatmap](heatmap.png)
 
 - Snowfall shows strongest relationship among weather variables  
 - Most weather variables have weak correlations  
@@ -70,7 +70,7 @@ A *major incident* is defined as a delay affecting **50 or more trains**.
 ---
 
 ### 🔹 Time Series Trends
-![Time Series](images/timeseries.png)
+![Time Series](timeseries.png)
 
 - Incidents and ridership move together over time  
 - Confirms ridership as a key driver  
@@ -80,16 +80,16 @@ A *major incident* is defined as a delay affecting **50 or more trains**.
 ### 🔹 Model Diagnostics
 
 #### Residuals vs Fitted
-![Residuals vs Fitted](images/residuals_fitted.png)
+![Residuals vs Fitted](residuals_fitted.png)
 
 #### Q-Q Plot
-![Q-Q Plot](images/qq_plot.png)
+![Q-Q Plot](qq_plot.png)
 
 #### Scale-Location
-![Scale Location](images/scale_location.png)
+![Scale Location](scale_location.png)
 
 #### Residuals vs Leverage
-![Leverage Plot](images/leverage.png)
+![Leverage Plot](leverage.png)
 
 - Residuals are approximately normal  
 - No major influential points  
