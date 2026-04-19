@@ -1,6 +1,6 @@
 # 🚇 Modeling Subway Major Incidents Using Weather and Ridership
 
-> **Key Insight:** Ridership—not weather—is the primary driver of major NYC subway incidents, improving model performance from **~8% to 54% (R²)**.
+> **Key Insight:** Both ridership and snowfall drive NYC subway major incidents, and a **log-log model** best captures the multiplicative relationship — outperforming the linear and log-response specifications by AIC.
 
 ---
 
@@ -14,6 +14,7 @@ A *major incident* is defined as a delay affecting **50 or more trains**.
 ## 🎯 Objectives
 - Quantify the impact of **weather variables** on subway disruptions  
 - Evaluate whether **ridership explains variation more effectively**  
+- Compare **linear, log, and log-log** specifications to identify the best-fitting model  
 - Build and validate **statistical models**  
 
 ---
@@ -43,10 +44,15 @@ A *major incident* is defined as a delay affecting **50 or more trains**.
 - Linear regression models:
   - Weather-only  
   - Snow-only  
-  - Final model with ridership  
+  - Log-transformed snow-only  
+  - Linear model with snow and ridership  
+- Logarithmic transformation comparison:
+  - Linear response
+  - Log response
+  - Log-log specification  
 - Model validation:
-  - R², AIC  
-  - Residual diagnostics  
+  - AIC comparison  
+  - Residual diagnostics (both linear and log-log)  
   - VIF  
 
 ---
@@ -54,7 +60,7 @@ A *major incident* is defined as a delay affecting **50 or more trains**.
 ## 📈 Results
 
 ### 🔹 Relationship Between Ridership and Incidents
-![Ridership vs Incidents](ridership_regression.png)
+![Ridership vs Incidents](images/ridership_regression.png)
 
 - Strong positive relationship  
 - Higher ridership → more incidents  
@@ -62,7 +68,7 @@ A *major incident* is defined as a delay affecting **50 or more trains**.
 ---
 
 ### 🔹 Correlation Analysis
-![Correlation Heatmap](heatmap.png)
+![Correlation Heatmap](images/heatmap.png)
 
 - Snowfall shows strongest relationship among weather variables  
 - Most weather variables have weak correlations  
@@ -70,26 +76,26 @@ A *major incident* is defined as a delay affecting **50 or more trains**.
 ---
 
 ### 🔹 Time Series Trends
-![Time Series](timeseries.png)
+![Time Series](images/timeseries.png)
 
 - Incidents and ridership move together over time  
 - Confirms ridership as a key driver  
 
 ---
 
-### 🔹 Model Diagnostics
+### 🔹 Linear Model Diagnostics
 
 #### Residuals vs Fitted
-![Residuals vs Fitted](residuals_fitted.png)
+![Residuals vs Fitted](images/residuals_fitted.png)
 
 #### Q-Q Plot
-![Q-Q Plot](qq_plot.png)
+![Q-Q Plot](images/qq_plot.png)
 
 #### Scale-Location
-![Scale Location](scale_location.png)
+![Scale Location](images/scale_location.png)
 
 #### Residuals vs Leverage
-![Leverage Plot](leverage.png)
+![Leverage Plot](images/leverage.png)
 
 - Residuals are approximately normal  
 - No major influential points  
@@ -97,11 +103,50 @@ A *major incident* is defined as a delay affecting **50 or more trains**.
 
 ---
 
+### 🔹 Log-Log Model Visualizations
+
+#### Log-Log Relationship: Snowfall vs Incidents
+![Log-Log Snowfall vs Incidents](images/loglog_snow.png)
+
+#### Log-Log Relationship: Ridership vs Incidents
+![Log-Log Ridership vs Incidents](images/loglog_ridership.png)
+
+#### Actual vs Predicted Monthly Incidents
+![Actual vs Predicted](images/actual_vs_predicted.png)
+
+#### Actual vs Predicted Over Time
+![Actual vs Predicted Over Time](images/actual_vs_predicted_timeseries.png)
+
+- Log transformation produces more linear relationships  
+- Predicted values track observed incidents closely  
+
+---
+
+### 🔹 Log-Log Model Diagnostics
+
+#### Residuals vs Fitted
+![Log-Log Residuals vs Fitted](images/loglog_residuals_fitted.png)
+
+#### Normal Q-Q
+![Log-Log Q-Q Plot](images/loglog_qq_plot.png)
+
+#### Scale-Location
+![Log-Log Scale Location](images/loglog_scale_location.png)
+
+#### Residuals vs Leverage
+![Log-Log Leverage Plot](images/loglog_leverage.png)
+
+- Improved residual behavior over the linear specification  
+- More stable variance across fitted values  
+
+---
+
 ## 📊 Key Findings
-- 🚆 **Ridership is the strongest predictor of incidents**
-- ❄️ Snowfall is significant but secondary  
-- 📉 Weather alone has low explanatory power  
-- 📈 Combined model achieves **R² ≈ 0.54**
+- 🚆 **Ridership and snowfall both significantly predict incidents**
+- ❄️ Snowfall retains an independent effect even after controlling for system usage
+- 📉 Weather alone has low explanatory power
+- 🔁 The **log-log model** had the lowest AIC, indicating a multiplicative relationship fits better than a purely linear one
+- 📈 Diagnostics for the log-log specification show improved residual behavior compared with the linear model
 
 ---
 

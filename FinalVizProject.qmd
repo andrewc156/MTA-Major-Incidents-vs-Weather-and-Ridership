@@ -7,11 +7,11 @@ format:
 editor: visual
 ---
 
-## Introduction
+# Introduction
 
-This project analyzes monthly MTA major incidents in New York City and examines whether weather conditions help explain variation in incident counts. Major incidents are defined as incidents that delay 50 or more trains. The analysis begins with weather-only models and then improves the model by incorporating subway ridership as a measure of system usage.
+This project analyzes monthly MTA major incidents in New York City and examines whether weather conditions help explain variation in incident counts. Major incidents are defined as incidents that delay 50 or more trains. The analysis begins with weather-only models, then improves the model by incorporating subway ridership as a measure of system usage, and finally evaluates whether logarithmic transformations provide a better representation of the relationship between incidents, weather, and ridership.
 
-## Load Packages
+# Load Packages
 
 ```{r}
 library(dplyr)
@@ -23,7 +23,7 @@ library(httr)
 library(car)
 ```
 
-## Load and Summarize Incident Data
+# Load and Summarize Incident Data
 
 ```{r}
 incidents_2015_2019 <- read_csv("~/Downloads/MTAIncidents 2015-2019.csv", show_col_types = FALSE)
@@ -47,7 +47,7 @@ category_totals <- all_incidents %>%
   arrange(desc(total))
 ```
 
-## Download and Prepare Weather Data
+# Download and Prepare Weather Data
 
 ```{r}
 base_url <- "https://www.ncei.noaa.gov/access/services/data/v1"
@@ -98,7 +98,7 @@ weather_monthly <- weather_daily %>%
   arrange(month)
 ```
 
-## Combine Incidents and Weather Data
+# Combine Incidents and Weather Data
 
 ```{r}
 combined <- monthly_totals %>%
@@ -106,7 +106,7 @@ combined <- monthly_totals %>%
   left_join(weather_monthly, by = "month")
 ```
 
-## Correlation Analysis
+# Correlation Analysis
 
 ```{r}
 numeric_vars <- combined %>%
@@ -156,7 +156,7 @@ ggplot(cor_long, aes(x = var1, y = var2, fill = correlation)) +
 
 The heatmap confirms that snowfall is the weather feature most visibly associated with incident totals.
 
-## Initial Regression Models Using Weather Only
+# Initial Regression Models Using Weather Only
 
 ```{r}
 model1 <- lm(total ~ avg_tmax + total_prcp + total_snow, data = combined)
@@ -180,7 +180,7 @@ vif(model2)
 
 The low VIF values indicate that multicollinearity is not a major concern in these models.
 
-## Simple Linear Regression with Snow Only
+# Simple Linear Regression with Snow Only
 
 ```{r}
 snow_model <- lm(total ~ total_snow, data = combined)
@@ -189,7 +189,7 @@ summary(snow_model)
 
 The snow-only model shows that snowfall is a significant predictor, but it explains only a small portion of the variation in incidents.
 
-### Q-Q Plot for Snow-Only Model
+## Q-Q Plot for Snow-Only Model
 
 ```{r}
 #| fig-width: 8
@@ -202,7 +202,7 @@ qqline(residuals(snow_model), col = "red", lwd = 2)
 
 The residuals are approximately normal, with some deviation in the tails.
 
-### Residuals vs Fitted for Snow-Only Model
+## Residuals vs Fitted for Snow-Only Model
 
 ```{r}
 #| fig-width: 8
@@ -221,16 +221,17 @@ abline(h = 0, col = "red", lwd = 2)
 
 The residual pattern suggests the snow-only model misses important variation in the data.
 
-### Log-Transformed Model
+# Log-Transformed Snow-Only Model
 
 ```{r}
 log_snow_model <- lm(log(total) ~ total_snow, data = combined)
 summary(log_snow_model)
+
 ```
 
-The log transformation slightly changes the fit but still leaves the model with limited explanatory power.
+The log transformation changes the relationship slightly, but the model still leaves substantial variation unexplained because it does not yet account for differences in subway usage.
 
-## Add Subway Ridership Data (2020 and Later)
+# Add Subway Ridership Data (2020 and Later)
 
 ```{r}
 ridership <- read_csv("~/Downloads/MTA RIDERSHIP SINCE 2020.csv", show_col_types = FALSE)
@@ -261,22 +262,18 @@ combined_2020 <- combined %>%
 
 Restricting to 2020 onward allows incidents, weather, and ridership to be analyzed on the same time scale.
 
-## Final Model with Snow and Ridership
+# Linear Model with Snow and Ridership
 
 ```{r}
 final_model <- lm(total ~ total_snow + ridership_millions, data = combined_2020)
 summary(final_model)
 ```
 
-The final model shows that both snowfall and ridership are significant predictors of monthly major incidents.
+The linear model with snow and ridership substantially improves on the earlier weather-only models. Both snowfall and ridership are statistically significant predictors of monthly major incidents.
 
-The model has an (R\^2) of about 0.54, meaning roughly 54% of the variation in monthly incidents is explained by snowfall and ridership.
+An increase of 1 million riders is associated with additional major incidents, holding snowfall constant. Likewise, each additional inch of snow is associated with more incidents, holding ridership constant.
 
-An increase of 1 million riders is associated with about 0.29 additional major incidents, holding snowfall constant.
-
-Each additional inch of snow is associated with about 0.70 more incidents, holding ridership constant.
-
-## Incident Rate Model
+# Incident Rate Model
 
 ```{r}
 combined_2020 <- combined_2020 %>%
@@ -288,7 +285,7 @@ summary(rate_model)
 
 The incident rate model shows that snowfall remains significant even after adjusting for ridership.
 
-## Time Series of Incidents and Ridership
+# Time Series of Incidents and Ridership
 
 ```{r}
 #| fig-width: 8
@@ -308,11 +305,11 @@ ggplot(combined_2020, aes(x = month)) +
   )
 ```
 
-Incidents and ridership move together over time, suggesting higher system usage is associated with more disruptions.
+Incidents and ridership move together over time, suggesting that higher system usage is associated with more disruptions.
 
-## Diagnostics for Final Model
+# Diagnostics for Linear Model
 
-### Residuals vs Fitted
+## Residuals vs Fitted
 
 ```{r}
 #| fig-width: 8
@@ -322,9 +319,7 @@ Incidents and ridership move together over time, suggesting higher system usage 
 plot(final_model, which = 1)
 ```
 
-Residuals are randomly scattered, indicating the linear model is appropriate.
-
-### Normal Q-Q
+## Normal Q-Q
 
 ```{r}
 #| fig-width: 8
@@ -334,9 +329,7 @@ Residuals are randomly scattered, indicating the linear model is appropriate.
 plot(final_model, which = 2)
 ```
 
-Residuals are approximately normal with minor deviations in the tails.
-
-### Scale-Location
+## Scale-Location
 
 ```{r}
 #| fig-width: 8
@@ -346,9 +339,7 @@ Residuals are approximately normal with minor deviations in the tails.
 plot(final_model, which = 3)
 ```
 
-There is slight heteroscedasticity, but it is not severe.
-
-### Residuals vs Leverage
+## Residuals vs Leverage
 
 ```{r}
 #| fig-width: 8
@@ -358,47 +349,172 @@ There is slight heteroscedasticity, but it is not severe.
 plot(final_model, which = 5)
 ```
 
-No highly influential points are present.
-
-### Variance Inflation Factor
-
 ```{r}
 vif(final_model)
+
 ```
 
-The VIF values are very low, indicating no meaningful multicollinearity.
+The linear model performs better than the earlier models, but there is still some evidence that the relationship may not be perfectly linear.
 
-## Model Comparison
+# Model Comparison with Logarithmic Transformations
+
+To further improve the model, logarithmic transformations were considered. A log-transformed response can reduce skewness and stabilize variance, while a log-log model can capture multiplicative relationships and allow coefficients to be interpreted as elasticities.
 
 ```{r}
-model_old <- lm(total ~ total_snow, data = combined_2020)
-AIC(model_old, final_model)
+model_linear <- lm(total ~ total_snow + ridership_millions, data = combined_2020)
+
+model_log <- lm(log(total) ~ total_snow + ridership_millions, data = combined_2020)
+
+model_loglog <- lm(log(total) ~ log(total_snow + 1) + log(ridership_millions), data = combined_2020)
+
+AIC(model_linear, model_log, model_loglog)
+summary(model_loglog)
 ```
 
-The lower AIC for the final model shows that adding ridership substantially improves model performance.
+The AIC comparison shows that the log-log model provides the best fit among the three specifications. This suggests that the relationship between incidents, snowfall, and ridership is better represented on a multiplicative scale than on a purely linear one.
 
-## Additional Visualization
+# Additional Visualizations for the Log-Log Model
+
+## Log-Log Relationship: Snowfall vs Incidents
 
 ```{r}
 #| fig-width: 8
 #| fig-height: 6
 #| out-width: "100%"
 
-ggplot(combined_2020, aes(x = ridership_millions, y = total)) +
+ggplot(combined_2020, aes(x = log(total_snow + 1), y = log(total))) +
   geom_point() +
   geom_smooth(method = "lm", se = TRUE) +
   theme_minimal() +
   labs(
-    title = "Monthly Major Incidents vs. Subway Ridership",
-    x = "Ridership (Millions)",
-    y = "Monthly Major Incidents"
+    title = "Log-Log Relationship: Snowfall vs. Monthly Major Incidents",
+    x = "log(Total Snow + 1)",
+    y = "log(Monthly Major Incidents)"
   )
 ```
 
-The positive slope indicates that months with higher ridership generally have more major incidents.
+This plot shows the transformed relationship between snowfall and incidents. On the log scale, the pattern appears more linear than in the untransformed model.
 
-## Conclusion
+## Log-Log Relationship: Ridership vs Incidents
 
-The weather-only models showed that snowfall was the most meaningful weather predictor, while temperature and precipitation variables were generally not statistically significant. However, those models had relatively low explanatory power.
+```{r}
+#| fig-width: 8
+#| fig-height: 6
+#| out-width: "100%"
 
-After incorporating subway ridership and restricting the analysis to 2020 onward, model performance improved substantially. The final model showed that both snowfall and ridership were statistically significant predictors of monthly major incidents. Ridership served as the strongest predictor, while snowfall retained an independent effect even after controlling for system usage. This suggests that both operational exposure and weather conditions play important roles in explaining major MTA disruptions.
+ggplot(combined_2020, aes(x = log(ridership_millions), y = log(total))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE) +
+  theme_minimal() +
+  labs(
+    title = "Log-Log Relationship: Ridership vs. Monthly Major Incidents",
+    x = "log(Ridership in Millions)",
+    y = "log(Monthly Major Incidents)"
+  )
+```
+
+This plot shows that ridership also has a clearer linear relationship with incidents after the logarithmic transformation.
+
+## Actual vs Predicted Monthly Incidents
+
+```{r}
+combined_2020 <- combined_2020 %>%
+  mutate(
+    predicted_loglog = predict(model_loglog),
+    predicted_total = exp(predicted_loglog)
+  )
+
+```
+
+```{r}
+#| fig-width: 8
+#| fig-height: 6
+#| out-width: "100%"
+
+ggplot(combined_2020, aes(x = total, y = predicted_total)) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  theme_minimal() +
+  labs(
+    title = "Actual vs Predicted Monthly Incidents",
+    x = "Actual Incidents",
+    y = "Predicted Incidents"
+  )
+```
+
+If the model fit perfectly, the points would lie on the dashed line. The plot shows that the log-log model tracks the observed data reasonably well.
+
+## Actual vs Predicted Over Time
+
+```{r}
+#| fig-width: 8
+#| fig-height: 6
+#| out-width: "100%"
+
+ggplot(combined_2020, aes(x = month)) +
+  geom_line(aes(y = total, color = "Actual"), linewidth = 1) +
+  geom_line(aes(y = predicted_total, color = "Predicted"), linewidth = 1) +
+  theme_minimal() +
+  labs(
+    title = "Actual vs Predicted Monthly Major Incidents Over Time",
+    x = "Month",
+    y = "Monthly Major Incidents",
+    color = ""
+  )
+```
+
+This time series comparison shows how closely the fitted values from the log-log model follow the observed monthly incident totals.
+
+# Diagnostics for the Log-Log Model
+
+## Residuals vs Fitted
+
+```{r}
+#| fig-width: 8
+#| fig-height: 6
+#| out-width: "100%"
+
+plot(model_loglog, which = 1)
+```
+
+## Normal Q-Q
+
+```{r}
+#| fig-width: 8
+#| fig-height: 6
+#| out-width: "100%"
+
+plot(model_loglog, which = 2)
+```
+
+## Scale-Location
+
+```{r}
+#| fig-width: 8
+#| fig-height: 6
+#| out-width: "100%"
+
+plot(model_loglog, which = 3)
+```
+
+## Residuals vs Leverage
+
+```{r}
+#| fig-width: 8
+#| fig-height: 6
+#| out-width: "100%"
+
+plot(model_loglog, which = 5)
+```
+
+These diagnostics can be compared to the earlier linear-model diagnostics to assess whether the logarithmic transformation improved residual behavior and overall fit.
+
+# Conclusion
+
+The analysis began with weather-only models, which showed that snowfall was the most meaningful weather predictor, while temperature and precipitation variables were generally not statistically significant. However, these early models had relatively low explanatory power.
+
+A snow-only model confirmed that snowfall mattered, but it still left much of the variation in incidents unexplained. A log-transformed version of that model slightly improved the structure of the relationship, suggesting that transformation could be useful.
+
+After incorporating subway ridership and restricting the analysis to 2020 onward, model performance improved substantially. The linear model with snowfall and ridership showed that both predictors were statistically significant, indicating that both operational exposure and weather conditions contribute to MTA disruptions.
+
+Finally, comparing the linear, log, and log-log models showed that the log-log specification provided the best overall fit according to AIC. The additional visualizations and diagnostics suggest that the transformed model better captures the relationship between incident counts, snowfall, and ridership. Overall, the results suggest that monthly MTA major incidents are better explained by a multiplicative relationship in which both system usage and weather intensity play important roles.
