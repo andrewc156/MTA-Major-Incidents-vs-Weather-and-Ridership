@@ -148,6 +148,26 @@ A *major incident* is defined as a delay affecting **50 or more trains**.
 - 🔁 The **log-log model** had the lowest AIC, indicating a multiplicative relationship fits better than a purely linear one
 - 📈 Diagnostics for the log-log specification show improved residual behavior compared with the linear model
 
+### 🔢 AIC Model Comparison
+
+| Model         | df | AIC     |
+|---------------|----|---------|
+| Linear        | 4  | 392.13  |
+| Log response  | 4  |  12.52  |
+| **Log-log**   | 4  |   **5.40**  |
+
+The log-log specification wins by a wide margin (ΔAIC > 10 is considered decisive evidence).
+
+### 🔢 Log-Log Regression Coefficients
+
+| Term                              | Estimate | Std. Error | t      | p-value     |
+|-----------------------------------|---------:|-----------:|-------:|------------:|
+| (Intercept)                       |   0.751  |    0.297   |  2.53  | 0.014 *     |
+| log(total_snow + 1)               |   0.135  |    0.045   |  3.03  | 0.004 **    |
+| log(ridership_millions)           |   0.626  |    0.069   |  9.12  | < 1e-11 *** |
+
+Residual SE = 0.243 on 55 df. A 1% increase in ridership is associated with a ≈ 0.63% increase in monthly major incidents; a 1% increase in (snow + 1) is associated with a ≈ 0.13% increase.
+
 ---
 
 ## 🧰 Tech Stack
