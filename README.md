@@ -59,6 +59,35 @@ A *major incident* is defined as a delay affecting **50 or more trains**.
 
 ## 📈 Results
 
+### 🔹 Exploratory Visualizations of Incident Data
+
+#### Total Incidents by Category
+![Incidents by Category](images/bar_category.png)
+
+- A handful of categories (signals, track, persons on trackbed) dominate the total incident count
+
+#### Total Incidents by Year
+![Incidents by Year](images/bar_year.png)
+
+- Annual totals show the 2020 pandemic-era dip and a steady recovery thereafter
+
+#### Year × Category Composition
+![Year x Category](images/bar_year_category.png)
+
+- The mix of incident categories stays broadly stable year-to-year — overall volume scales with system usage rather than category mix shifting dramatically
+
+#### Monthly Incidents Over Time (2015–2024)
+![Monthly Time Series](images/timeseries_full.png)
+
+- Full ten-year window with a LOESS smoother highlighting the underlying trend, including the 2020 trough
+
+#### Distribution of Monthly Incidents by Category (Half-Violin)
+![Half-Violin by Category](images/halfviolin_category.png)
+
+- Density (right) paired with a boxplot summary (left) — categories differ in both typical level and spread, with the heaviest categories occasionally producing extreme months
+
+---
+
 ### 🔹 Relationship Between Ridership and Incidents
 ![Ridership vs Incidents](images/ridership_regression.png)
 
@@ -172,13 +201,13 @@ Residual SE = 0.243 on 55 df. A 1% increase in ridership is associated with a �
 
 ## 🧰 Tech Stack
 - **R**
-- `dplyr`, `ggplot2`, `readr`, `lubridate`, `tidyr`, `httr`, `car`
+- `dplyr`, `ggplot2`, `readr`, `lubridate`, `tidyr`, `httr`, `car`, `ggdist`
 - Quarto
 
 ---
 
 ## 🚀 How to Run
 ```r
-install.packages(c("dplyr", "ggplot2", "readr", "lubridate", "tidyr", "httr", "car"))
+install.packages(c("dplyr", "ggplot2", "readr", "lubridate", "tidyr", "httr", "car", "ggdist"))
 quarto render FinalVizProject.qmd
 ```

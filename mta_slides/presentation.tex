@@ -48,9 +48,21 @@
 \usepackage{array}
 \usepackage{xcolor}
 \usepackage{hyperref}
+\usepackage{tikz}
 
-% KSU logo in bottom-right of every content slide
+% KSU logo placed entirely within the orange title banner at the top right.
+\addtobeamertemplate{frametitle}{}{%
+  \begin{tikzpicture}[remember picture, overlay]
+    \node[anchor=north east, xshift=-4pt, yshift=-2pt]
+      at (current page.north east)
+      {\includegraphics[height=0.55cm]{images/ksu_logo.png}};
+  \end{tikzpicture}%
+}
+
+% Keep the logo on the title page as well.
 \logo{\includegraphics[width=1cm]{images/ksu_logo.png}}
+% Suppress the body-area logo on regular content slides.
+\setbeamertemplate{logo}{}
 
 % ==============================================
 % Title page information
@@ -59,6 +71,7 @@
 \author[Andrew Chincea]{Andrew Chincea}
 \institute[KSU]{DATA 3230 -- Data Visualization Final Project\\Kennesaw State University}
 \date{April 24, 2026}
+\titlegraphic{\includegraphics[height=1.2cm]{images/ksu_logo.png}}
 
 % ==============================================
 \begin{document}
@@ -173,6 +186,47 @@ Heavy precip days       & $\approx 3$ & $\approx 2$ & 0 & 9 \\
 % ============================================================
 % SECTION 3: VISUALIZATIONS (rubric item 3)
 % ============================================================
+\begin{frame}{Exploratory: Incidents by Category and Year}
+\begin{columns}[T,onlytextwidth]
+  \column{0.5\textwidth}
+    \begin{center}
+    \small Total Incidents by Category\\
+    \includegraphics[width=\linewidth]{images/bar_category.png}
+    \end{center}
+  \column{0.5\textwidth}
+    \begin{center}
+    \small Total Incidents by Year\\
+    \includegraphics[width=\linewidth]{images/bar_year.png}
+    \end{center}
+\end{columns}
+\vspace{0.05cm}
+\small\textbf{Interpretation:} A handful of categories (signals, track, persons on trackbed) account for the bulk of major incidents. Annual totals show the 2020 pandemic dip and a steady recovery.
+\end{frame}
+
+\begin{frame}{Exploratory: Year $\times$ Category Composition}
+\begin{center}
+\includegraphics[width=0.72\textwidth]{images/bar_year_category.png}
+\end{center}
+\vspace{-0.15cm}
+\small\textbf{Interpretation:} The stacked composition stays broadly stable across years; overall volume tracks with system usage rather than category mix shifting.
+\end{frame}
+
+\begin{frame}{Exploratory: Monthly Incidents, 2015--2024}
+\begin{center}
+\includegraphics[width=0.70\textwidth]{images/timeseries_full.png}
+\end{center}
+\vspace{-0.15cm}
+\small\textbf{Interpretation:} Across the full ten-year window, monthly incidents fluctuate seasonally; the LOESS smoother captures the 2020 ridership-driven trough and the return toward pre-pandemic levels.
+\end{frame}
+
+\begin{frame}{Exploratory: Monthly Incidents by Category}
+\begin{center}
+\includegraphics[width=0.66\textwidth]{images/halfviolin_category.png}
+\end{center}
+\vspace{-0.15cm}
+\small\textbf{Interpretation:} The half-violin pairs the density of monthly incident counts (right) with a boxplot summary (left). Categories differ in both typical level and spread; the heaviest categories occasionally produce extreme months.
+\end{frame}
+
 \begin{frame}{Correlation Heatmap (Descriptive)}
 \begin{center}
 \includegraphics[width=0.54\textwidth]{images/heatmap.png}
@@ -191,10 +245,10 @@ Heavy precip days       & $\approx 3$ & $\approx 2$ & 0 & 9 \\
 
 \begin{frame}{Visualization: Time Series}
 \begin{center}
-\includegraphics[width=0.70\textwidth]{images/timeseries.png}
+\includegraphics[width=0.62\textwidth]{images/timeseries.png}
 \end{center}
-\vspace{-0.2cm}
-\textbf{Interpretation:} Incidents and ridership track each other over time, including the 2020 COVID-19 collapse and subsequent recovery. This confirms the correlational finding at a temporal level.
+\vspace{-0.15cm}
+\small\textbf{Interpretation:} Incidents and ridership track each other over time, including the 2020 COVID-19 collapse and recovery -- confirming the correlational finding at a temporal level.
 \end{frame}
 
 % ============================================================
@@ -452,7 +506,7 @@ Is the monthly count of NYC subway major incidents associated with snowfall and 
 
 \textbf{Code:} \texttt{FinalVizProject.qmd} (Quarto / R).
 
-\textbf{Tools:} R -- \texttt{dplyr}, \texttt{ggplot2}, \texttt{readr}, \texttt{lubridate}, \texttt{tidyr}, \texttt{httr}, \texttt{car}.
+\textbf{Tools:} R -- \texttt{dplyr}, \texttt{ggplot2}, \texttt{readr}, \texttt{lubridate}, \texttt{tidyr}, \texttt{httr}, \texttt{car}, \texttt{ggdist}.
 \end{frame}
 
 % ============================================================
