@@ -14,6 +14,11 @@ This project analyzes monthly MTA major incidents in New York City and examines 
 # Load Packages
 
 ```{r}
+# Run the line below ONCE the first time you open this project to install all
+# required packages, then re-comment it so packages are not reinstalled on
+# every render.
+#install.packages(c("dplyr", "readr", "ggplot2", "lubridate", "tidyr", "httr", "car", "ggdist"))
+
 library(dplyr)
 library(readr)
 library(ggplot2)

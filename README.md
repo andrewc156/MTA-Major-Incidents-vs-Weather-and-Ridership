@@ -206,8 +206,52 @@ Residual SE = 0.243 on 55 df. A 1% increase in ridership is associated with a �
 
 ---
 
-## 🚀 How to Run
+## 📦 Installing the R packages
+The first code chunk in the `.qmd` contains the install line, commented out:
 ```r
-install.packages(c("dplyr", "ggplot2", "readr", "lubridate", "tidyr", "httr", "car", "ggdist"))
+#install.packages(c("dplyr", "readr", "ggplot2", "lubridate", "tidyr", "httr", "car", "ggdist"))
+```
+The first time you run the project, **uncomment that line** (remove the leading `#`) and run that chunk once to install the eight packages. After they are installed you can re-comment the line so the packages are not reinstalled on every render.
+
+An active internet connection is also required when rendering, because the weather data is pulled live from the NOAA NCEI API inside the document.
+
+## 🚀 Running the code
+
+### Data files
+The script loads three CSVs from your `~/Downloads/` folder:
+- `MTAIncidents 2015-2019.csv`
+- `MTAIncidents 2020-2024.csv`
+- `MTA RIDERSHIP SINCE 2020.csv`
+
+Make sure these three files are present in `~/Downloads/` before rendering. (If you'd rather keep them next to the `.qmd`, edit the three `read_csv("~/Downloads/...")` lines in `FinalVizProject.qmd` to point at your preferred path.)
+
+### Option A — RStudio
+1. Open `FinalVizProject.qmd` in RStudio.
+2. Confirm the three CSVs above are sitting in `~/Downloads/`.
+3. Run the install chunk once (see above).
+4. Click **Render** to produce the PDF, or use the green play buttons to run chunks one at a time.
+
+### Option B — Command line (Quarto CLI)
+From the folder containing the `.qmd`:
+```bash
 quarto render FinalVizProject.qmd
+```
+This will produce `FinalVizProject.pdf` in the same folder.
+
+### Option C — Run chunk-by-chunk in RStudio (no rendering)
+If you just want to see the output interactively without producing a PDF:
+1. Open `FinalVizProject.qmd` in RStudio.
+2. Confirm the three CSVs are in `~/Downloads/`.
+3. Run the install chunk once (see above) if you haven't already.
+4. Click the green ▶ button at the top right of each code chunk to run it, or place your cursor inside a chunk and press **Ctrl + Shift + Enter** (Windows/Linux) or **Cmd + Shift + Enter** (macOS). Output (tables, plots, regression summaries, diagnostic plots) will appear inline below each chunk and in the Plots / Console panes — no LaTeX or rendering required.
+
+## 📄 Rendered PDF
+A pre-rendered copy of the report is included as `FinalVizProject.pdf`. It contains the full incident-data exploratory visualizations (bar charts by category and year, the stacked year × category breakdown, the 2015–2024 monthly time series with LOESS, and the half-violin distribution by category), the correlation heatmap, the weather-only regression models, the snow + ridership linear model, the log-log model with elasticity interpretation, AIC model comparison, and full residual diagnostics (Residuals vs Fitted, Normal Q-Q, Scale-Location, Residuals vs Leverage, VIF) for both the linear and log-log specifications.
+
+## 🎤 Slides
+A Beamer slide deck summarizing the project is included at `mta_slides/presentation.pdf` (source: `mta_slides/presentation.tex`). To rebuild:
+```bash
+cd mta_slides
+pdflatex presentation.tex
+pdflatex presentation.tex   # second pass for cross-references
 ```
